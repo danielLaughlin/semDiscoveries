@@ -1,0 +1,134 @@
+---
+title: 'Discoveries and novel insights in ecology using SEM'
+author: "Daniel C. Laughlin and James B. Grace"
+date: "6/28/2019"
+output: html_document
+---
+
+```{r setup, eval=TRUE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(lavaan)
+require(psych)
+require(semPlot)
+```
+
+# Simulate an indirect effect Fig 2A
+```{r, eval=TRUE}
+
+#simulate an indirect effect
+set.seed(19240220) # E.C. Pielou's Birthday
+x <- rnorm(100)
+y <- x + rnorm(100)
+z <- -y + rnorm(100)
+sim.data <- data.frame(x=x,y=y,z=z)
+
+# Step 1: Specify the model
+simsem  <- 'z ~ y
+            y ~ x'
+
+# Step 2: Estimate the model using sem()
+simsem.fit <- sem(simsem, data=sim.data)
+
+# Step 3: Extract results and evaluate model fit
+summary(simsem.fit, stand=TRUE, rsq=TRUE)
+
+# Note that in this output the model fits the data well
+# (i.e., the chi-square P-value is large)
+# and both path coefficients are significant.
+# If the model did not fit the data, then this would indicate
+# that we would be missing a pathway from x to z.
+
+# Plot SEM diagram
+semPaths(simsem.fit, what="std", whatLabels="std", residuals=FALSE, layout="circle2")
+
+# This pairs plot illustrates the bivariate correlations 
+# between all three variables.
+psych::pairs.panels(sim.data, hist.col=4, col=4)
+
+# Note that the correlation between x and z is similar to
+# the product of the correlation between x and y, and y and z.
+# The chi-square test tests for this.
+
+```
+
+
+# Simulate an offsetting effect Fig 2B
+```{r, eval=TRUE}
+# simulate an offsetting effect
+
+x <- rnorm(100)
+y <- x + rnorm(100)
+z <- -y + x + rnorm(100) 
+sim.data2 <- data.frame(x=x,y=y,z=z)
+
+# Evaluate *net* relationship between x and z
+m1 <- lm(z ~ x, data=sim.data2)
+plot(z ~ x, pch=19)
+abline(m1)
+summary(m1)
+
+# Note that even though z is both directly and indirectly
+# caused by x, the net effect of x on z is small
+# because the effects are offsetting (they counteract one another)
+
+# Let's use SEM to estimate these indirect and direct effects
+
+# Step 1: Specify the SEM
+simsem2  <- 'z ~ y + x
+            y ~ x'
+
+# Step 2: Estimate the model using sem()
+simsem.fit2 <- sem(simsem2, data=sim.data2)
+
+# Step 3: Extract results and evaluate model fit
+summary(simsem.fit2, stand=TRUE, rsq=TRUE)
+
+# Note that in this output the model is saturated
+# (all possible pathways are specified)
+# so the model perfectly fits the data.
+
+# Plot SEM diagram
+semPaths(simsem.fit2, what="std", whatLabels="std", residuals=FALSE, layout="circle2")
+
+# This pairs plot illustrates the bivariate correlations 
+# between all three variables.
+psych::pairs.panels(sim.data2, hist.col=4, col=4)
+
+# Note that the correlation between x and z is small.
+
+```
+
+
+# Simulate a suppressed effect Fig 2C
+```{r, eval=TRUE}
+#simulate a suppressed effect
+sim.data3 <- data.frame(MASS::mvrnorm(n = 300, mu=c(3.44, 34.15,0.186),
+                          Sigma= matrix(c(1.000,-0.718, 0.355,
+                                          -0.718,  1.000, -0.659,
+                                          0.355, -0.659,  1.000),3,3) ))
+
+colnames(sim.data3) <- c('z' , 'y' , 'x')
+sim.data3 <- sim.data3[,c('x','y','z')]
+
+### Analyze same data using lavaan
+# Step 1: Specify the SEM
+simsem3  <- 'z ~ x + y'
+
+# Step 2: Estimate the model using sem()
+simsem.fit3 <- sem(simsem3, data=sim.data3)
+
+# Step 3: Extract results and evaluate model fit
+summary(simsem.fit3, stand=TRUE, rsq=TRUE)
+
+
+# Plot SEM diagram
+semPaths(simsem.fit3, what="std", whatLabels="std", residuals=FALSE, layout="circle2")
+
+# Note the difference in sign between the coefficient of x --> z estimated in the SEM (-0.160) above
+# and the bivariate correlation between x and z (0.39) seen in the pairs plot below.
+
+pairs.panels(sim.data3, hist.col=4, col=4)
+
+```
+
+
