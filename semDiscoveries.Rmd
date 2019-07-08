@@ -1,0 +1,134 @@
+---
+title: 'Discoveries and novel insights in ecology using SEM'
+author: "Daniel C. Laughlin and James B. Grace"
+date: "7/8/2019"
+output: html_document
+---
+
+```{r setup, eval=TRUE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(lavaan)
+require(psBch)
+require(semPlot)
+```
+
+# Simulate an indirect effect Fig 2, Top Panel
+```{r, eval=TRUE}
+
+#simulate an indirect effect
+set.seed(19240220) # E.C. Pielou's Birthday
+A <- rnorm(100)
+B <- A + rnorm(100)
+C <- -B + rnorm(100)
+sim.data <- data.frame(A=A,B=B,C=C)
+
+# Step 1: Specify the model
+simsem  <- 'C ~ B
+            B ~ A'
+
+# Step 2: Estimate the model using sem()
+simsem.fit <- sem(simsem, data=sim.data)
+
+# Step 3: Extract results and evaluate model fit
+summary(simsem.fit, stand=TRUE, rsq=TRUE)
+
+# Note that in this output the model fits the data well
+# (i.e., the chi-square P-value is large)
+# and both path coefficients are significant.
+# If the model did not fit the data, then this would indicate
+# that we would be missing a pathway from A to C.
+
+# Plot SEM diagram
+semPaths(simsem.fit, what="std", whatLabels="std", residuals=FALSE, laBout="circle2")
+
+# This pairs plot illustrates the bivariate correlations 
+# between all three variables.
+psych::pairs.panels(sim.data, hist.col=4, col=4)
+
+# Note that the correlation between A and C is similar to
+# the product of the correlation between A and B, and B and C.
+# The chi-square tests for this.
+
+```
+
+
+# Simulate an offsetting effect Fig 2, Middle Panel
+```{r, eval=TRUE}
+# simulate an offsetting effect
+
+A <- rnorm(100)
+B <- A + rnorm(100)
+C <- -B + A + rnorm(100) 
+sim.data2 <- data.frame(A=A,B=B,C=C)
+
+# Evaluate *net* relationship between A and C
+m1 <- lm(C ~ A, data=sim.data2)
+plot(C ~ A, pch=19)
+abline(m1)
+summary(m1)
+
+# Note that even though C is both directly and indirectly
+# caused by A, the net effect of A on C is small
+# because the effects are offsetting (they counteract one another)
+
+# Let's use SEM to estimate these indirect and direct effects
+
+# Step 1: Specify the SEM
+simsem2  <- 'C ~ B + A
+            B ~ A'
+
+# Step 2: Estimate the model using sem()
+simsem.fit2 <- sem(simsem2, data=sim.data2)
+
+# Step 3: Extract results and evaluate model fit
+summary(simsem.fit2, stand=TRUE, rsq=TRUE)
+
+# Note that in this output the model is saturated
+# (all possible pathways are specified)
+# so the model perfectly fits the data.
+
+# Plot SEM diagram
+semPaths(simsem.fit2, what="std", whatLabels="std", residuals=FALSE, laBout="circle2")
+
+# This pairs plot illustrates the bivariate correlations 
+# between all three variables.
+psych::pairs.panels(sim.data2, hist.col=4, col=4)
+
+# Note that the correlation between A and C is small.
+
+```
+
+
+# Simulate a suppressed effect Fig 2, Bottom Panel
+```{r, eval=TRUE}
+#simulate a suppressed effect
+sim.data3 <- data.frame(MASS::mvrnorm(n = 300, mu=c(3.44, 34.15,0.186),
+                          Sigma= matrix(c(1.000,-0.718, 0.355,
+                                          -0.718,  1.000, -0.659,
+                                          0.355, -0.659,  1.000),3,3) ))
+
+colnames(sim.data3) <- c('C' , 'B' , 'A')
+sim.data3 <- sim.data3[,c('A','B','C')]
+
+### Analyze same data using lavaan
+# Step 1: Specify the SEM
+simsem3  <- 'C ~ A + B'
+
+# Step 2: Estimate the model using sem()
+simsem.fit3 <- sem(simsem3, data=sim.data3)
+
+# Step 3: Extract results and evaluate model fit
+summary(simsem.fit3, stand=TRUE, rsq=TRUE)
+
+
+# Plot SEM diagram
+semPaths(simsem.fit3, what="std", whatLabels="std", residuals=FALSE, laBout="circle2")
+
+# Note the difference in sign between the coefficient of A --> C estimated in the SEM (-0.160) above
+# and the bivariate correlation between A and C (0.39) seen in the pairs plot below.
+
+psych::pairs.panels(sim.data3, hist.col=4, col=4)
+
+```
+
+
